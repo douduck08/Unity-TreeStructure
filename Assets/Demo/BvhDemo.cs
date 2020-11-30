@@ -13,6 +13,8 @@ public class BvhDemo : MonoBehaviour {
     BoundingVolumeHeirachy boundingVolumeHeirachy;
 
     int initIndex = 0;
+    Camera mainCamera;
+    List<BoundingVolumeHeirachy.Node> hitResults = new List<BoundingVolumeHeirachy.Node> ();
 
     void Start () {
         Random.InitState (System.DateTime.Now.Millisecond);
@@ -34,6 +36,7 @@ public class BvhDemo : MonoBehaviour {
         }
 
         boundingVolumeHeirachy = new BoundingVolumeHeirachy ();
+        mainCamera = Camera.main;
     }
 
     void Update () {
@@ -46,8 +49,9 @@ public class BvhDemo : MonoBehaviour {
                 rendererList[i].SetPropertyBlock (null);
             }
 
-            var hitResults = new List<BoundingVolumeHeirachy.Node> ();
-            boundingVolumeHeirachy.RayCast (transform.position, transform.position + transform.forward * 1000f, hitResults);
+            var ray = mainCamera.ScreenPointToRay (Input.mousePosition);
+            hitResults.Clear ();
+            boundingVolumeHeirachy.Intersects (ray.origin, ray.origin + ray.direction * 1000f, hitResults);
             for (int i = 0; i < hitResults.Count; i++) {
                 var rendererIndex = hitResults[i].dataId;
                 var renderer = rendererList[rendererIndex];
@@ -55,19 +59,25 @@ public class BvhDemo : MonoBehaviour {
                 propertyBlock.SetColor ("_Color", Color.red);
                 renderer.SetPropertyBlock (propertyBlock);
             }
-            Debug.Log (hitResults.Count);
         }
     }
 
 #if UNITY_EDITOR
     void OnDrawGizmosSelected () {
-        if (boundingVolumeHeirachy != null) {
+        if (Application.isPlaying) {
             foreach (var node in boundingVolumeHeirachy.GetNodes ()) {
-                Gizmos.DrawWireCube (node.bounding.center, node.bounding.size);
+                var bounding = node.bounding;
+                Gizmos.DrawWireCube (bounding.center, bounding.size);
+            }
+
+            var ray = mainCamera.ScreenPointToRay (Input.mousePosition);
+            Gizmos.color = Color.red;
+            Gizmos.DrawRay (ray.origin, ray.origin + ray.direction * 1000f);
+            for (int i = 0; i < hitResults.Count; i++) {
+                var bounding = hitResults[i].bounding;
+                Gizmos.DrawWireCube (bounding.center, bounding.size);
             }
         }
-        Gizmos.color = Color.red;
-        Gizmos.DrawRay (transform.position, transform.forward * 1000f);
     }
 #endif
 }

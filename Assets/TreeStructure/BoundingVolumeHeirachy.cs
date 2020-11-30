@@ -29,44 +29,18 @@ public struct BoundingVolume {
         return 2.0f * (size.z + size.y + size.z);
     }
 
-    public float RayCast (Vector3 from, Vector3 to) {
-        var d = to - from;
-        var absD = new Vector3 (Mathf.Abs (d.x), Mathf.Abs (d.y), Mathf.Abs (d.z));
-        var tMin = float.MinValue;
-        var tMax = float.MaxValue;
-        for (int i = 0; i < 3; i++) {
-            if (absD[i] < float.Epsilon) {
-                if (from[i] < min[i] || max[i] < from[i]) {
-                    return float.MinValue;
-                }
-            } else {
-                float t1 = (min[i] - from[i]) / d[i];
-                float t2 = (max[i] - from[i]) / d[i];
-
-                if (t1 > t2) {
-                    float temp = t1;
-                    t1 = t2;
-                    t2 = temp;
-                }
-
-                tMin = Mathf.Max (tMin, t1);
-                tMax = Mathf.Min (tMax, t2);
-
-                if (tMin > tMax) {
-                    return float.MinValue;
-                }
-            }
-        }
-
-        if (tMin < 0.0f || 1f < tMin) {
-            return float.MinValue;
-        }
-
-        return tMin;
-    }
-
     public static BoundingVolume Combine (BoundingVolume a, BoundingVolume b) {
         return new BoundingVolume (Vector3.Min (a.min, b.min), Vector3.Max (a.max, b.max));
+    }
+
+    public static BoundingVolume TowPoints (Vector3 p1, Vector3 p2) {
+        return new BoundingVolume (Vector3.Min (p1, p2), Vector3.Max (p1, p2));
+    }
+
+    public static bool Intersects (BoundingVolume a, BoundingVolume b) {
+        return a.min.x <= b.max.x && a.max.x >= b.min.x
+          && a.min.y <= b.max.y && a.max.y >= b.min.y
+          && a.min.z <= b.max.z && a.max.z >= b.min.z;
     }
 }
 
@@ -99,9 +73,6 @@ public class BoundingVolumeHeirachy {
         }
     }
 
-    // List<Renderer> dataList;
-    // List<Node> heirachyNodes = new List<Node> ();
-
     Node[] nodes = new Node[16];
     int rootNode = -1;
     int nextFreeNode = -1;
@@ -125,21 +96,20 @@ public class BoundingVolumeHeirachy {
         }
     }
 
-    public bool RayCast (Vector3 from, Vector3 to, List<Node> hitResults) {
+    public bool Intersects (Vector3 a, Vector3 b, List<Node> results) {
         var hit = false;
+        var rayBounding = BoundingVolume.TowPoints (a, b);
+
         var stack = new Stack<int> ();
         stack.Push (rootNode);
         while (stack.Count > 0) {
-            int index = stack.Pop ();
-            var t = nodes[index].bounding.RayCast (from, to);
-            if (t < 0f) {
+            var index = stack.Pop ();
+            if (!BoundingVolume.Intersects (rayBounding, nodes[index].bounding)) {
                 continue;
             }
 
             if (nodes[index].isLeaf) {
-                // TODO: object ray intersection
-                // int objectIndex = nodes[index].objectIndex;
-                hitResults.Add (nodes[index]);
+                results.Add (nodes[index]);
                 hit = true;
             } else {
                 stack.Push (nodes[index].childA);
