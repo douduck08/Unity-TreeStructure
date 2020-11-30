@@ -12,6 +12,8 @@ public class BvhDemo : MonoBehaviour {
     List<Renderer> rendererList;
     BoundingVolumeHeirachy boundingVolumeHeirachy;
 
+    int initIndex = 0;
+
     void Start () {
         Random.InitState (System.DateTime.Now.Millisecond);
 
@@ -32,18 +34,40 @@ public class BvhDemo : MonoBehaviour {
         }
 
         boundingVolumeHeirachy = new BoundingVolumeHeirachy ();
-        boundingVolumeHeirachy.Build (rendererList);
     }
 
     void Update () {
+        if (initIndex < rendererList.Count) {
+            var bounds = rendererList[initIndex].bounds;
+            boundingVolumeHeirachy.InsertLeaf (initIndex, new BoundingVolume (bounds.min, bounds.max));
+            initIndex += 1;
+        } else {
+            for (int i = 0; i < rendererList.Count; i++) {
+                rendererList[i].SetPropertyBlock (null);
+            }
 
+            var hitResults = new List<BoundingVolumeHeirachy.Node> ();
+            boundingVolumeHeirachy.RayCast (transform.position, transform.position + transform.forward * 1000f, hitResults);
+            for (int i = 0; i < hitResults.Count; i++) {
+                var rendererIndex = hitResults[i].dataId;
+                var renderer = rendererList[rendererIndex];
+                var propertyBlock = new MaterialPropertyBlock ();
+                propertyBlock.SetColor ("_Color", Color.red);
+                renderer.SetPropertyBlock (propertyBlock);
+            }
+            Debug.Log (hitResults.Count);
+        }
     }
 
 #if UNITY_EDITOR
     void OnDrawGizmosSelected () {
-        foreach (var node in boundingVolumeHeirachy.nodes) {
-            Gizmos.DrawWireCube (node.bounding.center, node.bounding.size);
+        if (boundingVolumeHeirachy != null) {
+            foreach (var node in boundingVolumeHeirachy.GetNodes ()) {
+                Gizmos.DrawWireCube (node.bounding.center, node.bounding.size);
+            }
         }
+        Gizmos.color = Color.red;
+        Gizmos.DrawRay (transform.position, transform.forward * 1000f);
     }
 #endif
 }

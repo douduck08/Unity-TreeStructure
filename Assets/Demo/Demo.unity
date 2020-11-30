@@ -223,7 +223,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce6e36a32afcd7d49be08e1359341cad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sphereNumber: 50
+  sphereNumber: 100
   positionRange: {x: -10, y: 10}
   scaleRange: {x: 1, y: 1}
 --- !u!4 &1183412974
