@@ -223,9 +223,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce6e36a32afcd7d49be08e1359341cad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sphereNumber: 100
-  positionRange: {x: -10, y: 10}
+  sphereNumber: 1000
+  positionRange: {x: -30, y: 30}
   scaleRange: {x: 1, y: 1}
+  slowInit: 0
+  useBvh: 1
 --- !u!4 &1183412974
 Transform:
   m_ObjectHideFlags: 0

@@ -19,6 +19,12 @@ public struct BoundingVolume {
         }
     }
 
+    public Vector3 extents {
+        get {
+            return (max - min) * 0.5f;
+        }
+    }
+
     public BoundingVolume (Vector3 min, Vector3 max) {
         this.min = min;
         this.max = max;
@@ -45,6 +51,9 @@ public struct BoundingVolume {
 }
 
 public class BoundingVolumeHeirachy {
+
+    public delegate void QueryCallback (BoundingVolume bounds, Node node);
+    public delegate void RayCastCallback (Vector3 from, Vector3 to, Node node);
 
     public struct Node {
         public BoundingVolume bounding;
@@ -96,9 +105,23 @@ public class BoundingVolumeHeirachy {
         }
     }
 
-    public bool Intersects (Vector3 a, Vector3 b, List<Node> results) {
-        var hit = false;
-        var rayBounding = BoundingVolume.TowPoints (a, b);
+    // TODO: create proxy, destory proxy, move proxy
+
+    public void Query (BoundingVolume bounds, QueryCallback callback) {
+        // TODO: Query method
+    }
+
+    static Vector3 FindOrthogonal (Vector3 v) {
+        if (v.x >= 1.0f / Mathf.Sqrt (3.0f))
+            return new Vector3 (v.y, -v.x, 0.0f);
+        else
+            return new Vector3 (0.0f, v.z, -v.y);
+    }
+
+    public void RayCast (Vector3 from, Vector3 to, RayCastCallback callback) {
+        var rayBounding = BoundingVolume.TowPoints (from, to);
+        var v = FindOrthogonal ((to - from).normalized);
+        var abs_v = new Vector3 (Mathf.Abs (v.x), Mathf.Abs (v.y), Mathf.Abs (v.z));
 
         var stack = new Stack<int> ();
         stack.Push (rootNode);
@@ -108,15 +131,23 @@ public class BoundingVolumeHeirachy {
                 continue;
             }
 
+            var c = nodes[index].bounding.center;
+            var h = nodes[index].bounding.extents;
+            var separation = Mathf.Abs (Vector3.Dot (v, from - c)) - Vector3.Dot (abs_v, h);
+            if (separation > 0.0f) {
+                continue;
+            }
+
             if (nodes[index].isLeaf) {
-                results.Add (nodes[index]);
-                hit = true;
+                if (callback != null) {
+                    callback.Invoke (from, to, nodes[index]);
+                    // TODO: Fraction update
+                }
             } else {
                 stack.Push (nodes[index].childA);
                 stack.Push (nodes[index].childB);
             }
         }
-        return hit;
     }
 
     int AllocateNode () {
@@ -263,8 +294,12 @@ public class BoundingVolumeHeirachy {
         return sibling;
     }
 
+    public void RemoveLeaf (int leaf) {
+        // TODO: RemoveLeaf method
+    }
+
     int Balance (int index) {
-        // TODO
+        // TODO: Balance method
         return index;
     }
 }
